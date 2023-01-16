@@ -1,4 +1,5 @@
 #' Translator options
+#' @keywords internal
 .translator_options <- list(
   cultural_bignumer_mark = NULL,
   cultural_punctuation_mark = NULL,
@@ -13,6 +14,7 @@
 #' Find details in method descriptions below.
 #'
 #' @importFrom jsonlite fromJSON
+#' @importFrom R6 R6Class
 #' @import methods
 #' @import shiny
 #' @export
@@ -37,7 +39,7 @@
 #' server <- function(input, output) {}
 #' shinyApp(ui = ui, server = server)
 #' }
-Translator <- R6::R6Class(
+Translator <- R6Class( #nolint
   "Translator",
   public = list(
     #' @description
@@ -84,14 +86,17 @@ Translator <- R6::R6Class(
     #' Get active key translation
     get_key_translation = function() private$key_translation,
     #' @description
+    #' Get current target translation language
+    get_translation_language = function() private$translation_language,
+    #' @description
     #' Translates 'keyword' to language specified by 'set_translation_language'
     #' @param keyword character or vector of characters with a word or
     #' expression to translate
     #' @param session Shiny server session (default: current reactive domain)
     translate = function(keyword, session = shiny::getDefaultReactiveDomain()) {
       if (!is.null(session)) {
-        translation_language <- if (!is.null(session$input$`i18n-state`)) {
-          session$input$`i18n-state`
+        translation_language <- if (!is.null(session$userData$shiny.i18n$lang)) {
+          session$userData$shiny.i18n$lang()
         } else {
           private$translation_language
         }
@@ -148,7 +153,8 @@ Translator <- R6::R6Class(
       if (identical(private$translation_language, character(0)))
         stop("Please provide a 'translation_language'. Check docs how.")
       tr <- switch(api,
-                   google = translate_with_google_cloud(keyword, translation_language),
+                   google = translate_with_google_cloud(keyword,
+                                                        private$translation_language),
                    stop("This 'api' is not supported.")
       )
       tr
@@ -179,7 +185,7 @@ Translator <- R6::R6Class(
       if (!private$js) {
         return(translation)
       }
-      shiny::span(class = 'i18n', `data-key` = keyword, translation)
+      shiny::span(class = "i18n", `data-key` = keyword, translation)
     },
     raw_translate = function(keyword, translation_language) {
       if (missing(translation_language)) {
@@ -191,7 +197,7 @@ Translator <- R6::R6Class(
       if (identical(translation_language, private$key_translation))
         return(keyword)
       tr <- as.character(private$translations[keyword, translation_language])
-      if (anyNA(tr)){
+      if (anyNA(tr)) {
         warning(sprintf("'%s' translation does not exist.",
                         keyword[which(is.na(tr))]))
         tr[which(is.na(tr))] <- keyword[which(is.na(tr))]
@@ -250,7 +256,7 @@ Translator <- R6::R6Class(
 init_i18n <- function(translation_csvs_path = NULL,
                       translation_json_path = NULL,
                       translation_csv_config = NULL,
-                      automatic = FALSE){
+                      automatic = FALSE) {
   Translator$new(translation_csvs_path, translation_json_path,
                  translation_csv_config, automatic)
 }

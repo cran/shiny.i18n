@@ -6,6 +6,7 @@
 #'
 #' @return shiny tag with div \code{"i18n-state"}
 #' @import shiny
+#' @keywords internal
 i18n_state <- function(init_language) {
     shiny::tags$div(
       id = "i18n-state",
@@ -59,7 +60,9 @@ usei18n <- function(translator) {
   translations[[key_translation]] <- rownames(translations)
   shiny::tagList(
     shiny::tags$head(
-      shiny::tags$script(glue::glue("var i18n_translations = {toJSON(translations, auto_unbox = TRUE)}")),
+      shiny::tags$script(
+        glue::glue("var i18n_translations = {toJSON(translations, auto_unbox = TRUE)}")
+      ),
       shiny::tags$script(src = js_file)
     ),
     i18n_state(translator$key_translation)
@@ -70,12 +73,17 @@ usei18n <- function(translator) {
 #'
 #' It sends a message to session object to update the language in UI elements.
 #'
-#' @param session Shiny server session
 #' @param language character with language code
+#' @param session Shiny server session (default: current reactive domain)
 #'
 #' @import shiny
 #' @export
 #' @seealso usei18n
-update_lang <- function(session, language) {
+update_lang <- function(language, session = shiny::getDefaultReactiveDomain()) {
+  if (inherits(session, "session_proxy")) session <- session$rootScope()
   session$sendInputMessage("i18n-state", list(lang = language))
+  if (is.null(session$userData$shiny.i18n$lang)) {
+    session$userData$shiny.i18n$lang <- reactiveVal()
+  }
+  session$userData$shiny.i18n$lang(language)
 }

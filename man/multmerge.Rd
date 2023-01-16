@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{multmerge}
 \alias{multmerge}
-\title{Mulitple Merge}
+\title{Multiple Merge}
 \usage{
 multmerge(filenames, sep = ",")
 }
@@ -18,3 +18,4 @@ data.frame with merged files
 Inspired by:
 https://www.r-bloggers.com/merging-multiple-data-files-into-one-data-frame/
 }
+\keyword{internal}
